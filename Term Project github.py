@@ -5,7 +5,7 @@
 # events-example0.py
 # Barebones timer, mouse, and keyboard events taken from 
 # https://www.cs.cmu.edu/~112/notes/hw5.html
-# change
+# 
 from tkinter import *
 import math
 
@@ -32,9 +32,10 @@ def mousePressed(event, data):
     # use event.x and event.y
     pass
 
+
 def keyPressed(event, data):
-    if event.keysym == "w": # Temporary for testing, need to align with angle
-        data.playerPosition[1] += 100
+    if event.keysym == "w":
+        data.playerPosition[1] += 100 # Need to change so its when pressed not single press
     if event.keysym == "s":
         data.playerPosition[1] -= 100
     if event.keysym == "d":
@@ -42,13 +43,20 @@ def keyPressed(event, data):
     if event.keysym == "a":
         data.playerPosition[0] -= 100
     if event.keysym == "Up":
-        data.playerPosition[4] += 1
+        if data.playerPosition[4] < 60:
+            data.playerPosition[4] += 1 # Need to change it to the mouse movement
     if event.keysym == "Down":
-        data.playerPosition[4] -= 1
+        if data.playerPosition[4] > -60:
+            data.playerPosition[4] -= 1
     if event.keysym == "Left":
         data.playerPosition[3] += 1
+        if data.playerPosition[3] == 90:
+            data.playerPosition[3] = -89
+        print(data.playerPosition[3])
     if event.keysym == "Right":
         data.playerPosition[3] -= 1
+        if data.playerPosition[3] == -90:
+            data.playerPosition[3] = 89
 
 def timerFired(data):
     pass
@@ -64,8 +72,8 @@ def drawCrosshairs(canvas, data):
                             dash = (3,5))
 
 def getBend(offset, distance, point, data):
-    #(offset[1]/(((distance**2) - ((data.playerPosition[2] - point[2])**2))**0.5)/400)
-    return ((offset[0]/(distance/400)), (offset[1]/(distance/400)))
+    #(offset[1]/(distance/400))
+    return ((offset[0]/(distance/500)), (offset[1]/((((distance**2) - ((data.playerPosition[2] - point[2])**2))**0.5)/1000)))
 
 def drawMapCiel(canvas, data): #All hardcoded for testing
     mapFloorCoords = ((0,0,4000),(0,10000,4000),(10000,10000,4000),(10000,0,4000))
