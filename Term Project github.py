@@ -1,11 +1,11 @@
 ###########################################
 # Vinay Mitta, vmitta, Section J
 ###########################################
-#
+
 # events-example0.py
 # Barebones timer, mouse, and keyboard events taken from 
 # https://www.cs.cmu.edu/~112/notes/hw5.html
-# 
+
 from tkinter import *
 import math
 
@@ -14,19 +14,23 @@ import math
 ####################################
 
 def init(data):
-    data.centerx = data.width/2
-    data.centery = data.height/2
-    initMap(data)
+    data.cenX = data.width/2
+    data.cenY = data.height/2
     initPlayer(data)
+    data.mode = "map1"
+    if data.mode == "map1":
+        initMap1(data)
 
-# 
-def initMap(data):
-    data.mapLength = 10000
-    data.mapWidth = 10000
-    data.mapHeight = 5000
+
+def initMap1(data):
+    data.cube1 = cube(5000,5000,2000,300)
+    data.cube2 = cube(1000,1000,1000,600)
+    data.cube3 = cube(9000,2000,200,500)
+
+
 
 def initPlayer(data):
-    data.playerPosition = [5000, -1000, 2000, 0, 0]
+    data.playerPos = [5000, -1000, 1500, 0, 0]
 
 def mousePressed(event, data):
     # use event.x and event.y
@@ -35,28 +39,32 @@ def mousePressed(event, data):
 
 def keyPressed(event, data):
     if event.keysym == "w":
-        data.playerPosition[1] += 100 # Need to change so its when pressed not single press
+        data.playerPos[1] += 100*math.cos(math.radians((data.playerPos[3])))
+        data.playerPos[0] += 100*math.sin(math.radians((data.playerPos[3]))) # Need to change so its when pressed not single press
     if event.keysym == "s":
-        data.playerPosition[1] -= 100
+        data.playerPos[1] += 100*math.cos(math.radians((data.playerPos[3] + 180)))
+        data.playerPos[0] += 100*math.sin(math.radians((data.playerPos[3] + 180)))
     if event.keysym == "d":
-        data.playerPosition[0] += 100
+        data.playerPos[1] += 100*math.cos(math.radians((data.playerPos[3] + 270)))
+        data.playerPos[0] += 100*math.sin(math.radians((data.playerPos[3] + 270)))
     if event.keysym == "a":
-        data.playerPosition[0] -= 100
+        data.playerPos[1] += 100*math.cos(math.radians((data.playerPos[3] + 90)))
+        data.playerPos[0] += 100*math.sin(math.radians((data.playerPos[3] + 90)))
     if event.keysym == "Up":
-        if data.playerPosition[4] < 60:
-            data.playerPosition[4] += 1 # Need to change it to the mouse movement
+        if data.playerPos[4] < 60:
+            data.playerPos[4] += 1 # Need to change it to the mouse movement
     if event.keysym == "Down":
-        if data.playerPosition[4] > -60:
-            data.playerPosition[4] -= 1
+        if data.playerPos[4] > -60:
+            data.playerPos[4] -= 1
     if event.keysym == "Left":
-        data.playerPosition[3] += 1
-        if data.playerPosition[3] == 90:
-            data.playerPosition[3] = -89
-        print(data.playerPosition[3])
+        data.playerPos[3] += 1
+        if data.playerPos[3] == 90 or data.playerPos[3] == 270:
+            data.playerPos[3] += 1
+        print(data.playerPos[3])
     if event.keysym == "Right":
-        data.playerPosition[3] -= 1
-        if data.playerPosition[3] == -90:
-            data.playerPosition[3] = 89
+        data.playerPos[3] -= 1
+        if data.playerPos[3] == 90 or data.playerPos[3] == 270:
+            data.playerPos[3] -= 1
 
 def timerFired(data):
     pass
@@ -65,39 +73,50 @@ def redrawAll(canvas, data):
     drawCrosshairs(canvas, data)
     drawMapFloor(canvas, data)
     drawMapCiel(canvas, data)
+    data.cube1.draw(canvas, data)
+    data.cube2.draw(canvas, data)
+    data.cube3.draw(canvas, data)
 
 def drawCrosshairs(canvas, data):
-    canvas.create_rectangle(data.centerx - 30, data.centery - 30,
-                            data.centerx + 30, data.centery + 30,
+    canvas.create_rectangle(data.cenX - 30, data.cenY - 30,
+                            data.cenX + 30, data.cenY + 30,
                             dash = (3,5))
 
 def getBend(offset, distance, point, data):
     #(offset[1]/(distance/400))
-    return ((offset[0]/(distance/500)), (offset[1]/((((distance**2) - ((data.playerPosition[2] - point[2])**2))**0.5)/1000)))
+    xBen = (offset[0]/(distance/1200))
+    yBen = (offset[1]/((((distance**2) - ((data.playerPos[2] - point[2])**2))**0.5)/1200))
+    x = (data.playerPos[0] - point[0])
+    y = (data.playerPos[1] - point[1])
+    #alpha = math.degrees(math.atan(x/y))
+    #theta = data.playerPos[3]
+    #if theta - alpha > 89:
+    #    yBen = yBen*data.width
+    return (xBen, yBen)
 
 def drawMapCiel(canvas, data): #All hardcoded for testing
-    mapFloorCoords = ((0,0,4000),(0,10000,4000),(10000,10000,4000),(10000,0,4000))
-    canvas.create_polygon(data.centerx + getBend((getOffset(mapFloorCoords[0], data.playerPosition)), getDistance(mapFloorCoords[0], data.playerPosition), mapFloorCoords[0], data)[0], 
-                            data.centery + getBend((getOffset(mapFloorCoords[0], data.playerPosition)), getDistance(mapFloorCoords[0], data.playerPosition), mapFloorCoords[0], data)[1],
-                            data.centerx + getBend((getOffset(mapFloorCoords[1], data.playerPosition)), getDistance(mapFloorCoords[1], data.playerPosition), mapFloorCoords[1], data)[0],
-                            data.centery + getBend((getOffset(mapFloorCoords[1], data.playerPosition)), getDistance(mapFloorCoords[1], data.playerPosition), mapFloorCoords[1], data)[1],
-                            data.centerx + getBend((getOffset(mapFloorCoords[2], data.playerPosition)), getDistance(mapFloorCoords[2], data.playerPosition), mapFloorCoords[2], data)[0],
-                            data.centery + getBend((getOffset(mapFloorCoords[2], data.playerPosition)), getDistance(mapFloorCoords[2], data.playerPosition), mapFloorCoords[2], data)[1],
-                            data.centerx + getBend((getOffset(mapFloorCoords[3], data.playerPosition)), getDistance(mapFloorCoords[3], data.playerPosition), mapFloorCoords[3], data)[0],
-                            data.centery + getBend((getOffset(mapFloorCoords[3], data.playerPosition)), getDistance(mapFloorCoords[3], data.playerPosition), mapFloorCoords[3], data)[1],
+    mapFlr = ((0,0,4000),(0,10000,4000),(10000,10000,4000),(10000,0,4000))
+    canvas.create_polygon(data.cenX + getBend((getOffset(mapFlr[0], data.playerPos)), getDistance(mapFlr[0], data.playerPos), mapFlr[0], data)[0], 
+                            data.cenY + getBend((getOffset(mapFlr[0], data.playerPos)), getDistance(mapFlr[0], data.playerPos), mapFlr[0], data)[1],
+                            data.cenX + getBend((getOffset(mapFlr[1], data.playerPos)), getDistance(mapFlr[1], data.playerPos), mapFlr[1], data)[0],
+                            data.cenY + getBend((getOffset(mapFlr[1], data.playerPos)), getDistance(mapFlr[1], data.playerPos), mapFlr[1], data)[1],
+                            data.cenX + getBend((getOffset(mapFlr[2], data.playerPos)), getDistance(mapFlr[2], data.playerPos), mapFlr[2], data)[0],
+                            data.cenY + getBend((getOffset(mapFlr[2], data.playerPos)), getDistance(mapFlr[2], data.playerPos), mapFlr[2], data)[1],
+                            data.cenX + getBend((getOffset(mapFlr[3], data.playerPos)), getDistance(mapFlr[3], data.playerPos), mapFlr[3], data)[0],
+                            data.cenY + getBend((getOffset(mapFlr[3], data.playerPos)), getDistance(mapFlr[3], data.playerPos), mapFlr[3], data)[1],
                             fill = "light grey", outline = "black")
     # need to get offset, and then shift that offset for distance
 
 def drawMapFloor(canvas, data): #All hardcoded for testing
-    mapFloorCoords = ((0,0,0),(0,10000,0),(10000,10000,0),(10000,0,0))
-    canvas.create_polygon(data.centerx + getBend((getOffset(mapFloorCoords[0], data.playerPosition)), getDistance(mapFloorCoords[0], data.playerPosition), mapFloorCoords[0], data)[0], 
-                            data.centery + getBend((getOffset(mapFloorCoords[0], data.playerPosition)), getDistance(mapFloorCoords[0], data.playerPosition), mapFloorCoords[0], data)[1],
-                            data.centerx + getBend((getOffset(mapFloorCoords[1], data.playerPosition)), getDistance(mapFloorCoords[1], data.playerPosition), mapFloorCoords[1], data)[0],
-                            data.centery + getBend((getOffset(mapFloorCoords[1], data.playerPosition)), getDistance(mapFloorCoords[1], data.playerPosition), mapFloorCoords[1], data)[1],
-                            data.centerx + getBend((getOffset(mapFloorCoords[2], data.playerPosition)), getDistance(mapFloorCoords[2], data.playerPosition), mapFloorCoords[2], data)[0],
-                            data.centery + getBend((getOffset(mapFloorCoords[2], data.playerPosition)), getDistance(mapFloorCoords[2], data.playerPosition), mapFloorCoords[2], data)[1],
-                            data.centerx + getBend((getOffset(mapFloorCoords[3], data.playerPosition)), getDistance(mapFloorCoords[3], data.playerPosition), mapFloorCoords[3], data)[0],
-                            data.centery + getBend((getOffset(mapFloorCoords[3], data.playerPosition)), getDistance(mapFloorCoords[3], data.playerPosition), mapFloorCoords[3], data)[1],
+    mapFlr = ((0,0,0),(0,10000,0),(10000,10000,0),(10000,0,0))
+    canvas.create_polygon(data.cenX + getBend((getOffset(mapFlr[0], data.playerPos)), getDistance(mapFlr[0], data.playerPos), mapFlr[0], data)[0], 
+                            data.cenY + getBend((getOffset(mapFlr[0], data.playerPos)), getDistance(mapFlr[0], data.playerPos), mapFlr[0], data)[1],
+                            data.cenX + getBend((getOffset(mapFlr[1], data.playerPos)), getDistance(mapFlr[1], data.playerPos), mapFlr[1], data)[0],
+                            data.cenY + getBend((getOffset(mapFlr[1], data.playerPos)), getDistance(mapFlr[1], data.playerPos), mapFlr[1], data)[1],
+                            data.cenX + getBend((getOffset(mapFlr[2], data.playerPos)), getDistance(mapFlr[2], data.playerPos), mapFlr[2], data)[0],
+                            data.cenY + getBend((getOffset(mapFlr[2], data.playerPos)), getDistance(mapFlr[2], data.playerPos), mapFlr[2], data)[1],
+                            data.cenX + getBend((getOffset(mapFlr[3], data.playerPos)), getDistance(mapFlr[3], data.playerPos), mapFlr[3], data)[0],
+                            data.cenY + getBend((getOffset(mapFlr[3], data.playerPos)), getDistance(mapFlr[3], data.playerPos), mapFlr[3], data)[1],
                             fill = "light grey", outline = "black")
     # need to get offset, and then shift that offset for distance
 
@@ -124,6 +143,47 @@ class cube(object):
     def __init__(self, x1, y1, z1, length):
         self.x1 = x1
         self.x2 = x1 + length
+        self.y1 = y1
+        self.y2 = y1 + length
+        self.z1 = z1
+        self.z2 = z1 + length
+        self.face0 = ((self.x1, self.y1, self.z1), #bottom face
+                      (self.x2, self.y1, self.z1),
+                      (self.x2, self.y2, self.z1),
+                      (self.x1, self.y2, self.z1))
+        self.face1 = ((self.x1, self.y1, self.z1), #global left face
+                      (self.x1, self.y2, self.z1),
+                      (self.x1, self.y2, self.z2),
+                      (self.x1, self.y1, self.z2))
+        self.face2 = ((self.x1, self.y1, self.z2), #top face
+                      (self.x2, self.y1, self.z2),
+                      (self.x2, self.y2, self.z2),
+                      (self.x1, self.y2, self.z2))
+        self.face3 = ((self.x2, self.y1, self.z1), #global right face
+                      (self.x2, self.y2, self.z1),
+                      (self.x2, self.y2, self.z2),
+                      (self.x2, self.y1, self.z2))
+        self.face4 = ((self.x1, self.y2, self.z1), #global back face
+                      (self.x2, self.y1, self.z2),
+                      (self.x2, self.y2, self.z2),
+                      (self.x1, self.y2, self.z2))
+        self.face5 = ((self.x1, self.y1, self.z1), #global front face
+                      (self.x2, self.y1, self.z1),
+                      (self.x2, self.y1, self.z2),
+                      (self.x1, self.y1, self.z2))
+        self.faces = (self.face0, self.face1, self.face2, self.face3, 
+                        self.face4, self.face5)
+    def draw(self, canvas, data):
+        for i in self.faces:
+            canvas.create_polygon(data.cenX + getBend((getOffset(i[0], data.playerPos)), getDistance(i[0], data.playerPos), i[0], data)[0], 
+                            data.cenY + getBend((getOffset(i[0], data.playerPos)), getDistance(i[0], data.playerPos), i[0], data)[1],
+                            data.cenX + getBend((getOffset(i[1], data.playerPos)), getDistance(i[1], data.playerPos), i[1], data)[0],
+                            data.cenY + getBend((getOffset(i[1], data.playerPos)), getDistance(i[1], data.playerPos), i[1], data)[1],
+                            data.cenX + getBend((getOffset(i[2], data.playerPos)), getDistance(i[2], data.playerPos), i[2], data)[0],
+                            data.cenY + getBend((getOffset(i[2], data.playerPos)), getDistance(i[2], data.playerPos), i[2], data)[1],
+                            data.cenX + getBend((getOffset(i[3], data.playerPos)), getDistance(i[3], data.playerPos), i[3], data)[0],
+                            data.cenY + getBend((getOffset(i[3], data.playerPos)), getDistance(i[3], data.playerPos), i[3], data)[1],
+                            fill = "grey", outline = "grey")
 
 ####################################
 # use the run function as-is
