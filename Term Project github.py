@@ -22,9 +22,29 @@ def init(data):
     data.speed = 3000
     data.movSpeed = 200
     data.cubeRate = 3
-    data.playerPos = [0, 0, 1500, 0, 0]
+    data.startHeight = 1500
+    data.playerPos = [0, 0, data.startHeight, 0, 0]
+    data.jumpVel = 0
+    data.lookVel = 0
+    data.slideVel = 0
+    data.gravity = -100
+    data.antigravity = 100
+    data.lookReturn = 0.1
     data.cubes = []
     data.score = 0
+    data.colours = ("grey", "blue", "green", "dark blue", 
+                    "light blue", "light green")
+    data.cubeHeights = (0, 0, 0, 0, 1500, 1500)
+    data.cubeWidths = (data.cubeWidth, data.cubeWidth, data.cubeWidth, 
+                        data.cubeWidth, data.cubeWidth*2, data.cubeWidth*2, 
+                        data.cubeWidth*3)
+
+def jump(data):
+    data.jumpVel = 600
+
+def slide(data):
+    data.lookVel = -0.5
+    data.slideVel = -500
 
 def drawDead(canvas, data):
     canvas.create_text(data.width/2, data.height/2, 
@@ -33,15 +53,15 @@ def drawDead(canvas, data):
                         text = "Press 'space' to restart", font = "Arial 15")
 
 def removePassed(data):
-    if data.cubes[0].getCenter()[1] < data.playerPos[1]:
-        data.cubes.pop(0)
+    if data.cubes[-1].getCenter()[1] < data.playerPos[1]:
+        data.cubes.pop()
 
 def checkDeath(data):
-    if ((abs(data.cubes[0].getCenter()[0] - data.playerPos[0]) 
+    if ((abs(data.cubes[-1].getCenter()[0] - data.playerPos[0]) 
                 < data.deathSpread) and 
-        (abs(data.cubes[0].getCenter()[1] - data.playerPos[1]) 
+        (abs(data.cubes[-1].getCenter()[1] - data.playerPos[1]) 
                 <= data.speed) and
-        (abs(data.cubes[0].getCenter()[2] - data.playerPos[2]) 
+        (abs(data.cubes[-1].getCenter()[2] - data.playerPos[2]) 
                 < data.deathSpread)):
         data.mode = "dead"
 
@@ -60,9 +80,19 @@ def drawCubes(canvas, data):
         i.draw(canvas, data)
 
 def generateCubes(data):
-    data.cubes.append(cube(data.playerPos[0] + 
+    colour = data.colours[random.randint(0,5)]
+    if data.score < 1000:
+        height = 0
+    else:
+        height = data.cubeHeights[random.randint(0,5)]
+    if data.score < 2000:
+        width = data.cubeWidth
+    else:
+        width = data.cubeWidths[random.randint(0,6)]
+    data.cubes.insert(0, cube(data.playerPos[0] + 
                         random.randint(-data.cubeSpread, data.cubeSpread),
-                        data.playerPos[1] + data.cubeDist, 0, data.cubeWidth))
+                        data.playerPos[1] + data.cubeDist, height, data.cubeWidth, 
+                        colour))
 
 def mousePressed(event, data):
     # use event.x and event.y
@@ -81,15 +111,19 @@ def playingKeyPressed(event, data):
     if event.keysym == "w":
         data.playerPos[1] += data.movSpeed*math.cos(math.radians((data.playerPos[3])))
         data.playerPos[0] += data.movSpeed*math.sin(math.radians((data.playerPos[3])))
-    if event.keysym == "s":
-        data.playerPos[1] += data.movSpeed*math.cos(math.radians((data.playerPos[3] + 180)))
-        data.playerPos[0] += data.movSpeed*math.sin(math.radians((data.playerPos[3] + 180)))
-    if event.keysym == "d":
+    #if event.keysym == "s":
+    #    data.playerPos[1] += data.movSpeed*math.cos(math.radians((data.playerPos[3] + 180)))
+    #    data.playerPos[0] += data.movSpeed*math.sin(math.radians((data.playerPos[3] + 180)))
+    if event.keysym == "d" and data.playerPos[2] == data.startHeight:
         data.playerPos[1] += data.movSpeed*math.cos(math.radians((data.playerPos[3] + 270)))
         data.playerPos[0] += data.movSpeed*math.sin(math.radians((data.playerPos[3] + 270)))
-    if event.keysym == "a":
+    if event.keysym == "a" and data.playerPos[2] == data.startHeight:
         data.playerPos[1] += data.movSpeed*math.cos(math.radians((data.playerPos[3] + 90)))
         data.playerPos[0] += data.movSpeed*math.sin(math.radians((data.playerPos[3] + 90)))
+    if event.keysym == 'space' and data.playerPos[2] == data.startHeight:
+        jump(data)
+    if event.keysym == 's' and data.playerPos[2] == data.startHeight:
+        slide(data)
     #if event.keysym == "Up":
     #    if data.playerPos[4] < 60:
     #        data.playerPos[4] += 1 # Need to change it to the mouse movement
@@ -124,12 +158,25 @@ def timerFired(data):
             generateCubes(data)
         data.score += (data.speed//1000)
         data.speed += 10
+    if data.slideVel < 0 or data.playerPos[2] < data.startHeight:
+        data.playerPos[2] += data.slideVel
+    if data.slideVel < 1000:
+        data.slideVel += data.antigravity
+    if data.lookVel < 0 or data.playerPos[4] < 0:
+        data.playerPos[4] += data.lookVel
+    if data.lookVel < 5:
+        data.lookVel += data.lookReturn
+    if data.jumpVel > 0 or data.playerPos[2] > data.startHeight:
+        data.playerPos[2] += data.jumpVel
+    if data.jumpVel > -1000:
+        data.jumpVel += data.gravity
     if data.mode == "playing" or data.mode == "dead":
         data.playerPos[1] += data.speed
         removePassed(data)
         checkDeath(data)
     if data.mode == "dead":
         data.speed = data.speed / 1.3
+    print(data.playerPos[2])
 
 def redrawAll(canvas, data):
     if data.mode == "playing" or data.mode == "dead":
@@ -185,7 +232,7 @@ def getOffset(point, player):
 
 
 class cube(object):
-    def __init__(self, x1, y1, z1, length):
+    def __init__(self, x1, y1, z1, length, colour = "grey"):
         self.x1 = x1
         self.x2 = x1 + length
         self.y1 = y1
@@ -193,6 +240,7 @@ class cube(object):
         self.z1 = z1
         self.z2 = z1 + length
         self.length = length
+        self.colour = colour
         self.face0 = ((self.x1, self.y1, self.z1), #bottom face
                       (self.x2, self.y1, self.z1),
                       (self.x2, self.y2, self.z1),
@@ -219,7 +267,7 @@ class cube(object):
                       (self.x1, self.y1, self.z2))
         self.faces = (self.face0, self.face1, self.face2, self.face3, 
                         self.face4, self.face5)
-    def draw(self, canvas, data, colour = "grey"):
+    def draw(self, canvas, data):
         for i in self.faces:
             canvas.create_polygon(
                 data.cenX + getBend((getOffset(i[0], data.playerPos)), 
@@ -238,7 +286,7 @@ class cube(object):
                     getDistance(i[3], data.playerPos), i[3], data)[0],
                 data.cenY + getBend((getOffset(i[3], data.playerPos)), 
                     getDistance(i[3], data.playerPos), i[3], data)[1],
-                            fill = colour, outline = colour)
+                            fill = self.colour, outline = self.colour)
     def getCenter(self):
         return (self.x1 + (self.length/2), self.y1 + (self.length/2),
                     self.z1 + (self.length/2))
