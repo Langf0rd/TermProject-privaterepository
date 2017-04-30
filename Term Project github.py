@@ -8,6 +8,7 @@
 
 from tkinter import *
 import math
+import random
 
 ####################################
 # customize these functions
@@ -16,26 +17,44 @@ import math
 def init(data):
     data.cenX = data.width/2
     data.cenY = data.height/2
-    initPlayer(data)
-    data.mode = "map1"
-    if data.mode == "map1":
-        initMap1(data)
+    data.mode = "playing"
+    if data.mode == "playing":
+        initPlaying(data)
+    data.cubeSpread = 20000
+    data.deathSpread = 1000
+    data.cubeDist = 200000
+    data.timerCount = 0
+    data.speed = 3000
+    data.cubeRate = 3
 
+def drawDead(canvas, data):
+    canvas.create_text(data.width/2, data.height/2, text = "Game Over")
 
-def initMap1(data):
-    data.cube1 = cube(5000,5000,2000,300)
-    data.cube2 = cube(1000,1000,1000,600)
-    data.cube3 = cube(9000,2000,200,500)
+def removePassed(data):
+    if data.cubes[0].getCenter()[1] < data.playerPos[1]:
+        data.cubes.pop(0)
 
+def checkDeath(data):
+    if ((abs(data.cubes[0].getCenter()[0] - data.playerPos[0]) < data.deathSpread) and 
+        (abs(data.cubes[0].getCenter()[1] - data.playerPos[1]) <= data.deathSpread) and
+        (abs(data.cubes[0].getCenter()[2] - data.playerPos[2]) < data.deathSpread)):
+        data.mode = "dead"
 
+def initPlaying(data):
+    data.playerPos = [0, 0, 1500, 0, 0]
+    data.cubes = []
 
-def initPlayer(data):
-    data.playerPos = [5000, -1000, 1500, 0, 0]
+def drawCubes(canvas, data):
+    for i in data.cubes:
+        i.draw(canvas, data)
+
+def generateCubes(data):
+    data.cubes.append(cube(data.playerPos[0] + random.randint(-data.cubeSpread, data.cubeSpread),
+                        data.playerPos[1] + data.cubeDist, 0, 2000))
 
 def mousePressed(event, data):
     # use event.x and event.y
     pass
-
 
 def keyPressed(event, data):
     if event.keysym == "w":
@@ -60,22 +79,29 @@ def keyPressed(event, data):
         data.playerPos[3] += 1
         if data.playerPos[3] == 90 or data.playerPos[3] == 270:
             data.playerPos[3] += 1
-        print(data.playerPos[3])
     if event.keysym == "Right":
         data.playerPos[3] -= 1
         if data.playerPos[3] == 90 or data.playerPos[3] == 270:
             data.playerPos[3] -= 1
 
 def timerFired(data):
-    pass
+    data.timerCount += 1
+    if data.timerCount == data.cubeRate:
+        data.timerCount = 0
+    if data.timerCount == 1:
+        generateCubes(data)
+    data.playerPos[1] += data.speed
+    removePassed(data)
+    checkDeath(data)
+    if data.mode == "dead":
+        data.speed = data.speed / 1.3
 
 def redrawAll(canvas, data):
+    drawCubes(canvas, data)
     drawCrosshairs(canvas, data)
-    drawMapFloor(canvas, data)
-    drawMapCiel(canvas, data)
-    data.cube1.draw(canvas, data)
-    data.cube2.draw(canvas, data)
-    data.cube3.draw(canvas, data)
+    if data.mode == "dead":
+        drawDead(canvas, data)
+
 
 def drawCrosshairs(canvas, data):
     canvas.create_rectangle(data.cenX - 30, data.cenY - 30,
@@ -83,42 +109,11 @@ def drawCrosshairs(canvas, data):
                             dash = (3,5))
 
 def getBend(offset, distance, point, data):
-    #(offset[1]/(distance/400))
     xBen = (offset[0]/(distance/1200))
     yBen = (offset[1]/((((distance**2) - ((data.playerPos[2] - point[2])**2))**0.5)/1200))
     x = (data.playerPos[0] - point[0])
     y = (data.playerPos[1] - point[1])
-    #alpha = math.degrees(math.atan(x/y))
-    #theta = data.playerPos[3]
-    #if theta - alpha > 89:
-    #    yBen = yBen*data.width
     return (xBen, yBen)
-
-def drawMapCiel(canvas, data): #All hardcoded for testing
-    mapFlr = ((0,0,4000),(0,10000,4000),(10000,10000,4000),(10000,0,4000))
-    canvas.create_polygon(data.cenX + getBend((getOffset(mapFlr[0], data.playerPos)), getDistance(mapFlr[0], data.playerPos), mapFlr[0], data)[0], 
-                            data.cenY + getBend((getOffset(mapFlr[0], data.playerPos)), getDistance(mapFlr[0], data.playerPos), mapFlr[0], data)[1],
-                            data.cenX + getBend((getOffset(mapFlr[1], data.playerPos)), getDistance(mapFlr[1], data.playerPos), mapFlr[1], data)[0],
-                            data.cenY + getBend((getOffset(mapFlr[1], data.playerPos)), getDistance(mapFlr[1], data.playerPos), mapFlr[1], data)[1],
-                            data.cenX + getBend((getOffset(mapFlr[2], data.playerPos)), getDistance(mapFlr[2], data.playerPos), mapFlr[2], data)[0],
-                            data.cenY + getBend((getOffset(mapFlr[2], data.playerPos)), getDistance(mapFlr[2], data.playerPos), mapFlr[2], data)[1],
-                            data.cenX + getBend((getOffset(mapFlr[3], data.playerPos)), getDistance(mapFlr[3], data.playerPos), mapFlr[3], data)[0],
-                            data.cenY + getBend((getOffset(mapFlr[3], data.playerPos)), getDistance(mapFlr[3], data.playerPos), mapFlr[3], data)[1],
-                            fill = "light grey", outline = "black")
-    # need to get offset, and then shift that offset for distance
-
-def drawMapFloor(canvas, data): #All hardcoded for testing
-    mapFlr = ((0,0,0),(0,10000,0),(10000,10000,0),(10000,0,0))
-    canvas.create_polygon(data.cenX + getBend((getOffset(mapFlr[0], data.playerPos)), getDistance(mapFlr[0], data.playerPos), mapFlr[0], data)[0], 
-                            data.cenY + getBend((getOffset(mapFlr[0], data.playerPos)), getDistance(mapFlr[0], data.playerPos), mapFlr[0], data)[1],
-                            data.cenX + getBend((getOffset(mapFlr[1], data.playerPos)), getDistance(mapFlr[1], data.playerPos), mapFlr[1], data)[0],
-                            data.cenY + getBend((getOffset(mapFlr[1], data.playerPos)), getDistance(mapFlr[1], data.playerPos), mapFlr[1], data)[1],
-                            data.cenX + getBend((getOffset(mapFlr[2], data.playerPos)), getDistance(mapFlr[2], data.playerPos), mapFlr[2], data)[0],
-                            data.cenY + getBend((getOffset(mapFlr[2], data.playerPos)), getDistance(mapFlr[2], data.playerPos), mapFlr[2], data)[1],
-                            data.cenX + getBend((getOffset(mapFlr[3], data.playerPos)), getDistance(mapFlr[3], data.playerPos), mapFlr[3], data)[0],
-                            data.cenY + getBend((getOffset(mapFlr[3], data.playerPos)), getDistance(mapFlr[3], data.playerPos), mapFlr[3], data)[1],
-                            fill = "light grey", outline = "black")
-    # need to get offset, and then shift that offset for distance
 
 def getDistance(a, b):
     temp1 = ((a[0]-b[0])**2+(a[1]-b[1])**2)**0.5
@@ -147,6 +142,7 @@ class cube(object):
         self.y2 = y1 + length
         self.z1 = z1
         self.z2 = z1 + length
+        self.length = length
         self.face0 = ((self.x1, self.y1, self.z1), #bottom face
                       (self.x2, self.y1, self.z1),
                       (self.x2, self.y2, self.z1),
@@ -173,7 +169,7 @@ class cube(object):
                       (self.x1, self.y1, self.z2))
         self.faces = (self.face0, self.face1, self.face2, self.face3, 
                         self.face4, self.face5)
-    def draw(self, canvas, data):
+    def draw(self, canvas, data, colour = "grey"):
         for i in self.faces:
             canvas.create_polygon(data.cenX + getBend((getOffset(i[0], data.playerPos)), getDistance(i[0], data.playerPos), i[0], data)[0], 
                             data.cenY + getBend((getOffset(i[0], data.playerPos)), getDistance(i[0], data.playerPos), i[0], data)[1],
@@ -183,7 +179,10 @@ class cube(object):
                             data.cenY + getBend((getOffset(i[2], data.playerPos)), getDistance(i[2], data.playerPos), i[2], data)[1],
                             data.cenX + getBend((getOffset(i[3], data.playerPos)), getDistance(i[3], data.playerPos), i[3], data)[0],
                             data.cenY + getBend((getOffset(i[3], data.playerPos)), getDistance(i[3], data.playerPos), i[3], data)[1],
-                            fill = "grey", outline = "grey")
+                            fill = colour, outline = colour)
+    def getCenter(self):
+        return (self.x1 + (self.length/2), self.y1 + (self.length/2),
+                    self.z1 + (self.length/2))
 
 ####################################
 # use the run function as-is
@@ -215,7 +214,7 @@ def run(width=300, height=300):
     data = Struct()
     data.width = width
     data.height = height
-    data.timerDelay = 100 # milliseconds
+    data.timerDelay = 50 # milliseconds
     init(data)
     # create the root and the canvas
     root = Tk()
