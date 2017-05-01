@@ -20,7 +20,7 @@ def init(data):
     data.cubeWidth = 2000
     data.timerCount = 0
     data.speed = 3000
-    data.movSpeed = 200
+    data.movSpeed = 1000
     data.cubeRate = 3
     data.startHeight = 1500
     data.playerPos = [0, 0, data.startHeight, 0, 0]
@@ -38,6 +38,8 @@ def init(data):
     data.cubeWidths = (data.cubeWidth, data.cubeWidth, data.cubeWidth, 
                         data.cubeWidth, data.cubeWidth*2, data.cubeWidth*2, 
                         data.cubeWidth*3)
+    data.right = False
+    data.left = False
 
 def jump(data):
     data.jumpVel = 600
@@ -100,7 +102,8 @@ def mousePressed(event, data):
 
 def keyPressed(event, data):
     if data.mode == "playing":
-        playingKeyPressed(event, data)
+       #playingKeyPressed(event, data)
+       keyDown(event, data)
     if data.mode == "title":
         titleKeyPressed(event, data)
     if data.mode == "dead":
@@ -139,6 +142,24 @@ def playingKeyPressed(event, data):
     #    if data.playerPos[3] == 90 or data.playerPos[3] == 270:
     #        data.playerPos[3] -= 1
 
+def keyDown(event, data):
+    if event.keysym == "d":
+        data.right = True
+    if event.keysym == "a":
+        data.left = True
+    if event.keysym == 'space' and data.playerPos[2] == data.startHeight:
+        jump(data)
+    if event.keysym == 's' and data.playerPos[2] == data.startHeight:
+        slide(data)
+
+def keyReleased(event, data):
+    if data.mode != "playing":
+        pass
+    if event.keysym == "d":
+        data.right = False
+    if event.keysym == "a":
+        data.left = False
+
 def titleKeyPressed(event, data):
     if event.keysym == "space":
         data.mode = "playing"
@@ -176,7 +197,13 @@ def timerFired(data):
         checkDeath(data)
     if data.mode == "dead":
         data.speed = data.speed / 1.3
-    print(data.playerPos[2])
+    if data.left == True and data.playerPos[2] == data.startHeight:
+        data.playerPos[1] += data.movSpeed*math.cos(math.radians((data.playerPos[3] + 90)))
+        data.playerPos[0] += data.movSpeed*math.sin(math.radians((data.playerPos[3] + 90)))
+    if data.right == True and data.playerPos[2] == data.startHeight:
+        data.playerPos[1] += data.movSpeed*math.cos(math.radians((data.playerPos[3] + 270)))
+        data.playerPos[0] += data.movSpeed*math.sin(math.radians((data.playerPos[3] + 270)))
+
 
 def redrawAll(canvas, data):
     if data.mode == "playing" or data.mode == "dead":
@@ -311,6 +338,10 @@ def run(width=300, height=300):
         keyPressed(event, data)
         redrawAllWrapper(canvas, data)
 
+    def keyReleasedWrapper(event, canvas, data):
+        keyReleased(event, data)
+        redrawAllWrapper(canvas, data)
+
     def timerFiredWrapper(canvas, data):
         timerFired(data)
         redrawAllWrapper(canvas, data)
@@ -332,6 +363,8 @@ def run(width=300, height=300):
                             mousePressedWrapper(event, canvas, data))
     root.bind("<Key>", lambda event:
                             keyPressedWrapper(event, canvas, data))
+    root.bind("<KeyRelease>", lambda event:
+                            keyReleasedWrapper(event, canvas, data))
     timerFiredWrapper(canvas, data)
     # and launch the app
     root.mainloop()  # blocks until window is closed
