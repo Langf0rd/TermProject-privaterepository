@@ -241,7 +241,11 @@ def drawCubes(canvas, data):
 
 # Draws the indicators that tell the player they hit a yellow block
 def drawScored(canvas, data):
-    canvas.create_rectangle(0,0, data.width, data.height, fill = "light yellow")
+    if data.score > 10000:
+        scoreColour = "grey"
+    else:
+        scoreColour = "light yellow"
+    canvas.create_rectangle(0,0, data.width, data.height, fill = scoreColour)
     canvas.create_text(data.width/2, data.height/5, text = "score + 100",
                         font = "Arial 20")
 
@@ -250,6 +254,9 @@ def drawHorizon(canvas, data):
     data.horizon = cube(data.playerPos[0] - 100000, data.playerPos[1] + 230000,
                         -180000, 180000, "light grey")
     data.horizon.draw(canvas, data)
+
+def drawBlack(canvas, data):
+    canvas.create_rectangle(0,0,data.width, data.height, fill = "black")
 
 # Draws the help screen
 def drawHelp(canvas, data):
@@ -283,9 +290,13 @@ def drawHelp(canvas, data):
 
 # Draws the players score in the top left
 def drawScore(canvas, data):
+    if data.score > 10000:
+        textColour = "light Grey"
+    else:
+        textColour = "black"
     canvas.create_text(data.width/6, data.height/8, 
                         text = "Score = "+str(data.score), font = "Arial 15",
-                        anchor = "w")
+                        anchor = "w", fill = textColour)
 
 # Used for testing to see how movement and scaling works
 
@@ -337,6 +348,8 @@ def playingTimerFired(data):
 
 def redrawAll(canvas, data):
     if data.mode == "playing" or data.mode == "dead":
+        if data.score > 10000:
+            drawBlack(canvas, data)
         if data.scored > 0:
             drawScored(canvas, data)
         drawHorizon(canvas, data)
